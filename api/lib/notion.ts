@@ -46,8 +46,7 @@ export async function getReadyPosts() {
     const result =
         await notion.databases.query({
 
-            database_id:
-                process.env.NOTION_DATABASE_ID!,
+            database_id: process.env.NOTION_DATABASE_ID!,
 
 
             filter: {

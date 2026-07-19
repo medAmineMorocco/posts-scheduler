@@ -2,13 +2,13 @@ import {
     getReadyPosts,
     markScheduled
 }
-    from "../lib/notion";
+    from './lib/notion.js';
 
 
 import {
     schedulePost
 }
-    from "../lib/buffer";
+    from './lib/buffer.js';
 
 
 export async function GET() {
