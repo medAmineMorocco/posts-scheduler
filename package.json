@@ -1,0 +1,11 @@
+{
+  "name": "posts-scheduler",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@notionhq/client": "^2.3.0"
+  },
+  "scripts": {
+    "start": "vercel dev"
+  }
+}
