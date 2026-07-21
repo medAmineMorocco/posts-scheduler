@@ -15,30 +15,6 @@ function extractRichText(property: any) {
 }
 
 
-function parsePublishDate(
-    value: string
-): string {
-
-    // Input:
-    // 2026/07/16 10:00
-
-    const [
-        date,
-        time
-    ] = value.split(" ");
-
-
-    const [
-        year,
-        month,
-        day
-    ] = date.split("/");
-
-
-    return `${year}-${month}-${day}T${time}:00`;
-
-}
-
 
 export async function getReadyPosts() {
 
@@ -65,7 +41,7 @@ export async function getReadyPosts() {
             sorts: [
 
                 {
-                    property: "Publish At",
+                    property: "order",
 
                     direction: "ascending"
 
