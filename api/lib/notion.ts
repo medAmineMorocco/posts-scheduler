@@ -127,3 +127,62 @@ export async function markScheduled(
 
 
 }
+
+export async function insertPost(
+    text: string,
+    publishAt: string,
+    order: number
+) {
+
+    await notion.pages.create({
+
+        parent: {
+
+            database_id:
+                process.env.NOTION_DATABASE_ID!
+
+        },
+
+        properties: {
+
+            Post: {
+
+                rich_text: [
+                    {
+                        text: {
+                            content: text
+                        }
+                    }
+                ]
+
+            },
+
+            "Publish At": {
+
+                date: {
+                    start: publishAt
+                }
+
+            },
+
+            order: {
+
+                number: order
+
+            },
+
+            Status: {
+
+                select: {
+
+                    name: "Ready"
+
+                }
+
+            }
+
+        }
+
+    });
+
+}
