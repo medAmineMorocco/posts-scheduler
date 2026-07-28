@@ -155,9 +155,8 @@ Rules:
 - Every post must provide value to developers.
 - Make posts suitable for X engagement.
 - Use hashtags only when they add value.
-- Include links only occasionally and naturally:
+- Always Include Worktreewise link in post:
   - https://www.worktreewise.com
-  - https://docs.worktreewise.com/
 - Always add these tags at the end of the post: #Git #GitHub #DevTools  
 
 Return ONLY valid JSON.
