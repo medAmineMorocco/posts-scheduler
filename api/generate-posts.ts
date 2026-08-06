@@ -56,7 +56,7 @@ export async function GET() {
     for (let i = 0; i < posts.length; i++) {
         const day = Math.floor(i / 20);
 
-        const order = (i % 20) + 1;
+        const order = i + 1;
 
         const currentDay = new Date(startDate);
 
@@ -64,13 +64,13 @@ export async function GET() {
 
         const publishAt = buildPublishDate(
             currentDay,
-            TIME_SLOTS[order - 1]
+            TIME_SLOTS[i % 20]
         );
 
         await insertPost(
             posts[i],
             publishAt,
-            i
+            order
         );
     }
 

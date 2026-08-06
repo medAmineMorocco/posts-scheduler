@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/generate-posts",
-      "schedule": "0 10 * * 0"
+      "schedule": "0 10 * * 4"
     }
   ]
 }
