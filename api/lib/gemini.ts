@@ -1,5 +1,6 @@
 export async function generatePosts(
 ): Promise<string[]> {
+    console.log("[generatePosts] Generating posts");
 
     const fullPrompt = `
 You are an expert social media copywriter specialized in creating viral X (Twitter) content for developer tools and SaaS products.
@@ -172,6 +173,7 @@ Format:
 }
 `;
 
+    try {
     const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
@@ -220,8 +222,15 @@ Format:
 
     const parsed = JSON.parse(cleaned);
 
-    return parsed.posts.map(
+    const posts = parsed.posts.map(
         (p: any) => p.text
     );
+
+    console.log("[generatePosts] Posts generated", { count: posts.length });
+    return posts;
+    } catch (error) {
+        console.error("[generatePosts] Failed to generate posts", { error });
+        throw error;
+    }
 
 }

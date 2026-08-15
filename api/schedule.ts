@@ -12,10 +12,12 @@ import {
 
 
 export async function GET() {
+    console.log("[schedule.GET] Request started");
 
+    try {
+    const posts = await getReadyPosts();
 
-    const posts =
-        await getReadyPosts();
+    console.log("[schedule.GET] Ready posts loaded", { count: posts.length });
 
 
     const firstAccount =
@@ -40,8 +42,11 @@ export async function GET() {
         apiKey: string,
         profile: string
     ) {
-
-
+        console.log("[schedule.publish] Publishing post", {
+            postId: post.id,
+            publishAt: post.publishAt,
+            profile
+        });
         try {
 
 
@@ -66,15 +71,19 @@ export async function GET() {
 
             scheduled++;
 
+            console.log("[schedule.publish] Post scheduled", {
+                postId: post.id,
+                bufferId
+            });
+
 
         } catch (error) {
 
 
-            console.error(
-                "Failed:",
-                post.text,
+            console.error("[schedule.publish] Failed to schedule post", {
+                postId: post.id,
                 error
-            );
+            });
 
 
         }
@@ -113,11 +122,15 @@ export async function GET() {
     }
 
 
+    console.log("[schedule.GET] Request completed", { scheduled });
+
     return Response.json({
 
         scheduled
 
     });
-
-
+    } catch (error) {
+        console.error("[schedule.GET] Request failed", { error });
+        throw error;
+    }
 }

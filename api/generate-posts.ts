@@ -26,6 +26,7 @@ const TIME_SLOTS = [
 ];
 
 function getStartDate(): Date {
+    console.log("[getStartDate] Calculating the next scheduling date");
     const start = new Date();
 
     // Remove time part
@@ -34,44 +35,51 @@ function getStartDate(): Date {
     // Tomorrow
     start.setDate(start.getDate() + 1);
 
+    console.log("[getStartDate] Scheduling starts", { startDate: start.toISOString() });
     return start;
 }
 
 function buildPublishDate(date: Date, time: string): string {
+    console.log("[buildPublishDate] Building publish date", {
+        date: date.toISOString(),
+        time
+    });
     const [hours, minutes] = time.split(":").map(Number);
 
     const publishDate = new Date(date);
 
     publishDate.setHours(hours, minutes, 0, 0);
 
-    return publishDate.toISOString();
+    const result = publishDate.toISOString();
+    console.log("[buildPublishDate] Publish date built", { publishAt: result });
+    return result;
 }
 
 export async function GET() {
+    console.log("[generate-posts.GET] Request started");
 
-    const startDate = getStartDate();
+    try {
+        const startDate = getStartDate();
+        const posts = await generatePosts();
 
-    const posts = await generatePosts();
+        console.log("[generate-posts.GET] Posts generated", { count: posts.length });
 
-    for (let i = 0; i < posts.length; i++) {
-        const day = Math.floor(i / 20);
+        for (let i = 0; i < posts.length; i++) {
+            const day = Math.floor(i / 20);
+            const order = i + 1;
+            const currentDay = new Date(startDate);
 
-        const order = i + 1;
+            currentDay.setDate(startDate.getDate() + day);
 
-        const currentDay = new Date(startDate);
+            const publishAt = buildPublishDate(currentDay, TIME_SLOTS[i % 20]);
 
-        currentDay.setDate(startDate.getDate() + day);
+            console.log("[generate-posts.GET] Inserting post", { order, publishAt });
+            await insertPost(posts[i], publishAt, order);
+        }
 
-        const publishAt = buildPublishDate(
-            currentDay,
-            TIME_SLOTS[i % 20]
-        );
-
-        await insertPost(
-            posts[i],
-            publishAt,
-            order
-        );
+        console.log("[generate-posts.GET] Request completed", { inserted: posts.length });
+    } catch (error) {
+        console.error("[generate-posts.GET] Request failed", { error });
+        throw error;
     }
-
 }

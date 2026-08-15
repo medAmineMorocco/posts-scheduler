@@ -7,18 +7,25 @@ export const notion = new Client({
 
 
 function extractRichText(property: any) {
+    console.log("[extractRichText] Extracting rich text", {
+        itemCount: property.rich_text.length
+    });
 
-    return property.rich_text
+    const text = property.rich_text
         .map((item: any) => item.plain_text)
         .join("");
+
+    console.log("[extractRichText] Rich text extracted", { textLength: text.length });
+    return text;
 
 }
 
 
 
 export async function getReadyPosts() {
+    console.log("[getReadyPosts] Querying ready posts");
 
-
+    try {
     const result =
         await notion.databases.query({
 
@@ -55,7 +62,7 @@ export async function getReadyPosts() {
         });
 
 
-    return result.results.map(
+    const posts = result.results.map(
         (page: any) => ({
 
             id: page.id,
@@ -75,6 +82,13 @@ export async function getReadyPosts() {
         })
     );
 
+    console.log("[getReadyPosts] Ready posts loaded", { count: posts.length });
+    return posts;
+    } catch (error) {
+        console.error("[getReadyPosts] Failed to load ready posts", { error });
+        throw error;
+    }
+
 }
 
 
@@ -82,8 +96,9 @@ export async function markScheduled(
     pageId: string,
     bufferId: string
 ) {
+    console.log("[markScheduled] Updating post", { pageId, bufferId });
 
-
+    try {
     await notion.pages.update({
 
         page_id: pageId,
@@ -125,6 +140,12 @@ export async function markScheduled(
 
     });
 
+    console.log("[markScheduled] Post updated", { pageId, bufferId });
+    } catch (error) {
+        console.error("[markScheduled] Failed to update post", { pageId, error });
+        throw error;
+    }
+
 
 }
 
@@ -133,7 +154,13 @@ export async function insertPost(
     publishAt: string,
     order: number
 ) {
+    console.log("[insertPost] Creating post", {
+        order,
+        publishAt,
+        textLength: text.length
+    });
 
+    try {
     await notion.pages.create({
 
         parent: {
@@ -184,5 +211,15 @@ export async function insertPost(
         }
 
     });
+
+    console.log("[insertPost] Post created", { order, publishAt });
+    } catch (error) {
+        console.error("[insertPost] Failed to create post", {
+            order,
+            publishAt,
+            error
+        });
+        throw error;
+    }
 
 }

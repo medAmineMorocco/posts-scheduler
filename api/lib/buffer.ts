@@ -7,6 +7,11 @@ export async function schedulePost(
     apiKey: string,
     channelId: string
 ) {
+    console.log("[schedulePost] Scheduling Buffer post", {
+        scheduledAt,
+        channelId,
+        textLength: text.length
+    });
 
     const query = `
     mutation CreatePost($input: CreatePostInput!) {
@@ -39,6 +44,7 @@ export async function schedulePost(
     };
 
 
+    try {
     const response = await fetch(
         BUFFER_URL,
         {
@@ -63,10 +69,7 @@ export async function schedulePost(
     const result = await response.json();
 
 
-    console.log(
-        "Buffer response:",
-        JSON.stringify(result, null, 2)
-    );
+    console.log("[schedulePost] Buffer responded", { status: response.status });
 
 
     if (result.errors) {
@@ -95,5 +98,14 @@ export async function schedulePost(
     }
 
 
+    console.log("[schedulePost] Buffer post scheduled", { bufferId: action.post.id });
     return action.post.id;
+    } catch (error) {
+        console.error("[schedulePost] Failed to schedule Buffer post", {
+            scheduledAt,
+            channelId,
+            error
+        });
+        throw error;
+    }
 }
