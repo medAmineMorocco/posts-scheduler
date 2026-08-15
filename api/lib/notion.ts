@@ -5,6 +5,8 @@ export const notion = new Client({
     auth: process.env.NOTION_API_KEY
 });
 
+const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID!;
+
 
 function extractRichText(property: any) {
     console.log("[extractRichText] Extracting rich text", {
@@ -29,7 +31,7 @@ export async function getReadyPosts() {
     const result =
         await notion.databases.query({
 
-            database_id: process.env.NOTION_DATABASE_ID!,
+            database_id: NOTION_DATABASE_ID,
 
 
             filter: {
@@ -85,7 +87,9 @@ export async function getReadyPosts() {
     posts.forEach((post) => {
         console.log("[getReadyPosts] Ready post", {
             postId: post.id,
-            publishAt: post.publishAt
+            publishAt: post.publishAt,
+            text: post.text,
+            databaseId: NOTION_DATABASE_ID
         });
     });
 
@@ -173,7 +177,7 @@ export async function insertPost(
         parent: {
 
             database_id:
-                process.env.NOTION_DATABASE_ID!
+                NOTION_DATABASE_ID
 
         },
 
