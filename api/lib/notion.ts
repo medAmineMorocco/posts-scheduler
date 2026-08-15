@@ -28,6 +28,8 @@ export async function getReadyPosts() {
     console.log("[getReadyPosts] Querying ready posts");
 
     try {
+        const startOfToday = new Date();
+        startOfToday.setUTCHours(0, 0, 0, 0);
     const result =
         await notion.databases.query({
 
@@ -36,13 +38,20 @@ export async function getReadyPosts() {
 
             filter: {
 
-                property: "Status",
-
-                select: {
-
-                    equals: "Ready"
-
-                }
+                and: [
+                    {
+                        property: "Status",
+                        select: {
+                            equals: "Ready"
+                        }
+                    },
+                    {
+                        property: "Publish At",
+                        date: {
+                            on_or_after: startOfToday.toISOString()
+                        }
+                    }
+                ]
 
             },
 
