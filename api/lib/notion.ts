@@ -82,6 +82,13 @@ export async function getReadyPosts() {
         })
     );
 
+    posts.forEach((post) => {
+        console.log("[getReadyPosts] Ready post", {
+            postId: post.id,
+            publishAt: post.publishAt
+        });
+    });
+
     console.log("[getReadyPosts] Ready posts loaded", { count: posts.length });
     return posts;
     } catch (error) {
