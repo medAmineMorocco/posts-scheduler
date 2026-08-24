@@ -111,6 +111,23 @@ export async function getReadyPosts() {
 
 }
 
+export async function getReadyPostsSize(): Promise<number> {
+    const response = await notion.databases.query({
+        database_id: NOTION_DATABASE_ID,
+
+        page_size: 1,
+
+        filter: {
+            property: 'Status',
+            select: {
+                equals: 'ready',
+            },
+        },
+    });
+
+    return response.results.length;
+}
+
 
 export async function markScheduled(
     pageId: string,

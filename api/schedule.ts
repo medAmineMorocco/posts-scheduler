@@ -1,5 +1,5 @@
 import {
-    getReadyPosts,
+    getReadyPosts, getReadyPostsSize,
     markScheduled
 }
     from './lib/notion.js';
@@ -9,6 +9,7 @@ import {
     schedulePost
 }
     from './lib/buffer.js';
+import {generatePosts} from "./lib/gemini.js";
 
 
 export async function GET() {
@@ -123,6 +124,16 @@ export async function GET() {
 
 
     console.log("[schedule.GET] Request completed", { scheduled });
+
+    const readyPostsSize = await getReadyPostsSize();
+
+    if (readyPostsSize === 0) {
+        console.log(
+            '[schedule.GET] No ready posts remaining, generating 140 posts'
+        );
+
+        await generatePosts();
+    }
 
     return Response.json({
 
