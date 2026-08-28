@@ -120,7 +120,7 @@ export async function getReadyPostsSize(): Promise<number> {
         filter: {
             property: 'Status',
             select: {
-                equals: 'ready',
+                equals: 'Ready',
             },
         },
     });
