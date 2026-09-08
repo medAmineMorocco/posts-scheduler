@@ -9,7 +9,8 @@ import {
     schedulePost
 }
     from './lib/buffer.js';
-import {generatePosts} from "./lib/gemini.js";
+import { generateAndInsertPosts } from "./generate-posts.js";
+import { formatPostText } from "./lib/gemini.js";
 
 
 export async function GET() {
@@ -43,23 +44,30 @@ export async function GET() {
         apiKey: string,
         profile: string
     ) {
+        const normalizedMediaUrl = post.mediaUrl
+            ? post.mediaUrl.replace("https://worktreewise.com/images/worktreewise/", "https://worktreewise.com/images/v1.1.0/")
+            : null;
+
         console.log("[schedule.publish] Publishing post", {
             postId: post.id,
             publishAt: post.publishAt,
-            profile
+            profile,
+            mediaUrl: normalizedMediaUrl
         });
         try {
-
+            const formattedText = formatPostText(post.text);
 
             const bufferId =
                 await schedulePost(
-                    post.text,
+                    formattedText,
 
                     post.publishAt,
 
                     apiKey,
 
-                    profile
+                    profile,
+
+                    normalizedMediaUrl
                 );
 
 
@@ -132,7 +140,7 @@ export async function GET() {
             '[schedule.GET] No ready posts remaining, generating 140 posts'
         );
 
-        await generatePosts();
+        await generateAndInsertPosts();
     }
 
     return Response.json({

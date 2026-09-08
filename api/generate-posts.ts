@@ -55,29 +55,35 @@ function buildPublishDate(date: Date, time: string): string {
     return result;
 }
 
+export async function generateAndInsertPosts(): Promise<number> {
+    const startDate = getStartDate();
+    const posts = await generatePosts();
+
+    console.log("[generateAndInsertPosts] Posts generated", { count: posts.length });
+
+    for (let i = 0; i < posts.length; i++) {
+        const day = Math.floor(i / 20);
+        const order = i + 1;
+        const currentDay = new Date(startDate);
+
+        currentDay.setDate(startDate.getDate() + day);
+
+        const publishAt = buildPublishDate(currentDay, TIME_SLOTS[i % 20]);
+
+        console.log("[generateAndInsertPosts] Inserting post", { order, publishAt, mediaUrl: posts[i].mediaUrl });
+        await insertPost(posts[i], publishAt, order);
+    }
+
+    console.log("[generateAndInsertPosts] Completed", { inserted: posts.length });
+    return posts.length;
+}
+
 export async function GET() {
     console.log("[generate-posts.GET] Request started");
 
     try {
-        const startDate = getStartDate();
-        const posts = await generatePosts();
-
-        console.log("[generate-posts.GET] Posts generated", { count: posts.length });
-
-        for (let i = 0; i < posts.length; i++) {
-            const day = Math.floor(i / 20);
-            const order = i + 1;
-            const currentDay = new Date(startDate);
-
-            currentDay.setDate(startDate.getDate() + day);
-
-            const publishAt = buildPublishDate(currentDay, TIME_SLOTS[i % 20]);
-
-            console.log("[generate-posts.GET] Inserting post", { order, publishAt });
-            await insertPost(posts[i], publishAt, order);
-        }
-
-        console.log("[generate-posts.GET] Request completed", { inserted: posts.length });
+        const inserted = await generateAndInsertPosts();
+        return Response.json({ inserted });
     } catch (error) {
         console.error("[generate-posts.GET] Request failed", { error });
         throw error;

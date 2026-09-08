@@ -5,7 +5,7 @@ export const notion = new Client({
     auth: process.env.NOTION_API_KEY
 });
 
-const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID!;
+const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
 
 
 function extractRichText(property: any) {
@@ -88,7 +88,11 @@ export async function getReadyPosts() {
             publishAt:
                     page.properties[
                         "Publish At"
-                        ].date.start
+                        ].date.start,
+
+
+            mediaUrl:
+                page.properties["Media URL"]?.url || null
 
         })
     );
@@ -98,6 +102,7 @@ export async function getReadyPosts() {
             postId: post.id,
             publishAt: post.publishAt,
             text: post.text,
+            mediaUrl: post.mediaUrl,
             databaseId: NOTION_DATABASE_ID
         });
     });
@@ -187,73 +192,70 @@ export async function markScheduled(
 }
 
 export async function insertPost(
-    text: string,
+    post: string | { text: string; mediaUrl?: string | null },
     publishAt: string,
-    order: number
+    order: number,
+    mediaUrl?: string | null
 ) {
+    const text = typeof post === "string" ? post : post.text;
+    const resolvedMediaUrl = typeof post === "object" && post.mediaUrl ? post.mediaUrl : (mediaUrl || null);
+
     console.log("[insertPost] Creating post", {
         order,
         publishAt,
-        textLength: text.length
+        textLength: text.length,
+        mediaUrl: resolvedMediaUrl
     });
+
+    const properties: any = {
+        Post: {
+            rich_text: [
+                {
+                    text: {
+                        content: text
+                    }
+                }
+            ]
+        },
+
+        "Publish At": {
+            date: {
+                start: publishAt
+            }
+        },
+
+        order: {
+            number: order
+        },
+
+        Status: {
+            select: {
+                name: "Ready"
+            }
+        }
+    };
+
+    if (resolvedMediaUrl) {
+        properties["Media URL"] = {
+            url: resolvedMediaUrl
+        };
+    }
 
     try {
     await notion.pages.create({
-
         parent: {
-
             database_id:
                 NOTION_DATABASE_ID
-
         },
-
-        properties: {
-
-            Post: {
-
-                rich_text: [
-                    {
-                        text: {
-                            content: text
-                        }
-                    }
-                ]
-
-            },
-
-            "Publish At": {
-
-                date: {
-                    start: publishAt
-                }
-
-            },
-
-            order: {
-
-                number: order
-
-            },
-
-            Status: {
-
-                select: {
-
-                    name: "Ready"
-
-                }
-
-            }
-
-        }
-
+        properties
     });
 
-    console.log("[insertPost] Post created", { order, publishAt });
+    console.log("[insertPost] Post created", { order, publishAt, mediaUrl: resolvedMediaUrl });
     } catch (error) {
         console.error("[insertPost] Failed to create post", {
             order,
             publishAt,
+            mediaUrl: resolvedMediaUrl,
             error
         });
         throw error;

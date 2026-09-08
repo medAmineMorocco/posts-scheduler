@@ -5,12 +5,16 @@ export async function schedulePost(
     text: string,
     scheduledAt: string,
     apiKey: string,
-    channelId: string
+    channelId: string,
+    mediaUrl?: string | null
 ) {
+    const previewType = mediaUrl ? "image" : "worktreewise_link_card";
     console.log("[schedulePost] Scheduling Buffer post", {
         scheduledAt,
         channelId,
-        textLength: text.length
+        textLength: text.length,
+        previewType,
+        mediaUrl: mediaUrl || null
     });
 
     const query = `
@@ -33,14 +37,26 @@ export async function schedulePost(
   `;
 
 
+    const input: any = {
+        text,
+        channelId,
+        schedulingType: "automatic",
+        mode: "customScheduled",
+        dueAt: scheduledAt
+    };
+
+    if (mediaUrl) {
+        input.assets = [
+            {
+                image: {
+                    url: mediaUrl
+                }
+            }
+        ];
+    }
+
     const variables = {
-        input: {
-            text,
-            channelId,
-            schedulingType: "automatic",
-            mode: "customScheduled",
-            dueAt: scheduledAt
-        }
+        input
     };
 
 
