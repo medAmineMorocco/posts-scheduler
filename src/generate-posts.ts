@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+dotenv.config();
+
 import { generatePosts } from './lib/gemini.js';
 import { insertPost } from "./lib/notion.js";
 
@@ -55,11 +59,11 @@ function buildPublishDate(date: Date, time: string): string {
     return result;
 }
 
-export async function generateAndInsertPosts(): Promise<number> {
+export async function generateAndInsertPosts(targetCount: number = 140): Promise<number> {
     const startDate = getStartDate();
-    const posts = await generatePosts();
+    const posts = await generatePosts(targetCount);
 
-    console.log("[generateAndInsertPosts] Posts generated", { count: posts.length });
+    console.log("[generateAndInsertPosts] Posts generated", { count: posts.length, targetCount });
 
     for (let i = 0; i < posts.length; i++) {
         const day = Math.floor(i / 20);
@@ -78,6 +82,7 @@ export async function generateAndInsertPosts(): Promise<number> {
     return posts.length;
 }
 
+// Backward compatibility with previous API signature
 export async function GET() {
     console.log("[generate-posts.GET] Request started");
 
@@ -88,4 +93,22 @@ export async function GET() {
         console.error("[generate-posts.GET] Request failed", { error });
         throw error;
     }
+}
+
+// Execute directly if run via CLI
+const isDirectExecution =
+    import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}` ||
+    process.argv[1]?.endsWith("generate-posts.ts") ||
+    process.argv[1]?.endsWith("generate-posts.js");
+
+if (isDirectExecution) {
+    generateAndInsertPosts()
+        .then((inserted) => {
+            console.log("[generate-posts] Script finished successfully", { inserted });
+            process.exit(0);
+        })
+        .catch((err) => {
+            console.error("[generate-posts] Fatal error during execution", err);
+            process.exit(1);
+        });
 }

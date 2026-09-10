@@ -9,7 +9,6 @@
     "outDir": "dist"
   },
   "include": [
-    "api/**/*.ts",
-    "lib/**/*.ts"
+    "src/**/*.ts"
   ]
 }

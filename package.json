@@ -2,14 +2,20 @@
   "name": "posts-scheduler",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "schedule": "tsx src/schedule.ts",
+    "generate": "tsx src/generate-posts.ts",
+    "schedule:local": "tsx --env-file=.env.local src/schedule.ts",
+    "generate:local": "tsx --env-file=.env.local src/generate-posts.ts",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@notionhq/client": "^2.3.0"
   },
-  "scripts": {
-    "start": "vercel dev",
-    "test:schedule:vercel": "https://posts-scheduler-jade.vercel.app/api/schedule",
-    "test:schedule:local": "http://localhost:3000/api/schedule",
-    "test:generate:vercel": "https://posts-scheduler-jade.vercel.app/api/generate-posts",
-    "test:generate:local": "http://localhost:3000/api/generate-posts"
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "dotenv": "^17.4.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
   }
 }

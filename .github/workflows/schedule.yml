@@ -1,0 +1,36 @@
+name: Schedule Posts
+
+on:
+  schedule:
+    # Runs daily at 00:00 UTC (matching previous vercel.json cron)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  schedule:
+    name: Run Post Scheduler
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run scheduler
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          BUFFER_API_KEY_1: ${{ secrets.BUFFER_API_KEY_1 }}
+          BUFFER_PROFILE_1: ${{ secrets.BUFFER_PROFILE_1 }}
+          BUFFER_API_KEY_2: ${{ secrets.BUFFER_API_KEY_2 }}
+          BUFFER_PROFILE_2: ${{ secrets.BUFFER_PROFILE_2 }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run schedule
