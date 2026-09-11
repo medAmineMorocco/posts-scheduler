@@ -6,7 +6,7 @@ import { generatePosts } from './lib/gemini.js';
 import { insertPost } from "./lib/notion.js";
 
 const TIME_SLOTS = [
-    "02:00",
+    "06:00",
     "08:00",
     "10:00",
     "12:00",
@@ -17,7 +17,7 @@ const TIME_SLOTS = [
     "22:00",
     "23:00",
 
-    "03:00",
+    "05:00",
     "07:00",
     "09:00",
     "11:00",
