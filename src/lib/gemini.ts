@@ -4,16 +4,54 @@ export interface GeneratedPost {
     text: string;
     mediaId?: string | null;
     mediaUrl?: string | null;
+    tags?: string[];
 }
 
-export const WORKTREEWISE_TAGS = "#Git · #DevTools · #AICoding";
 export const DEFAULT_WORKTREEWISE_URL = "https://www.worktreewise.com";
+export const DEFAULT_FALLBACK_TAGS = ["#Git", "#DevTools"];
+// Backward-compatibility export
+export const WORKTREEWISE_TAGS = DEFAULT_FALLBACK_TAGS.join(" ");
 
 const WORKTREEWISE_URL_REGEX = /https:\/\/(?:www\.)?worktreewise\.com[^\s]*|https:\/\/docs\.worktreewise\.com[^\s]*/i;
 const LEGACY_TAGS_REGEX = /#Git\s+#GitHub\s+#DevTools/gi;
 const TARGET_TAGS_REGEX = /#Git\s*[·•-]?\s*#DevTools\s*[·•-]?\s*#AICoding/gi;
 
-export function formatPostText(rawText: string, ctaUrl?: string | null): string {
+export function normalizeTags(tagsInput?: string[] | string | null): string[] {
+    if (!tagsInput) return [];
+    const rawList = Array.isArray(tagsInput)
+        ? tagsInput
+        : tagsInput.split(/[\s,·•]+/);
+
+    const tags: string[] = [];
+    for (const item of rawList) {
+        const clean = item.trim().replace(/^[#]+/, "");
+        if (clean && /^[A-Za-z0-9_]+$/.test(clean)) {
+            const formatted = `#${clean}`;
+            if (!tags.includes(formatted)) {
+                tags.push(formatted);
+            }
+        }
+    }
+    return tags;
+}
+
+export function extractTagsFromText(text: string): string[] {
+    const matches = text.match(/#[A-Za-z0-9_]+/g);
+    if (!matches) return [];
+    const unique: string[] = [];
+    for (const m of matches) {
+        if (!unique.includes(m)) {
+            unique.push(m);
+        }
+    }
+    return unique;
+}
+
+export function formatPostText(
+    rawText: string,
+    ctaUrl?: string | null,
+    tagsInput?: string[] | string | null
+): string {
     let text = rawText || "";
 
     // 1. Detect if a WorktreeWise URL already exists in text or ctaUrl
@@ -27,26 +65,48 @@ export function formatPostText(rawText: string, ctaUrl?: string | null): string 
         url = DEFAULT_WORKTREEWISE_URL;
     }
 
-    // 2. Remove legacy or existing target tags from text to avoid duplication
+    // 2. Resolve tags: prioritize explicit tagsInput, then extract from rawText, fallback to DEFAULT_FALLBACK_TAGS
+    const providedTags = normalizeTags(tagsInput);
+    const existingTagsInText = extractTagsFromText(text);
+
+    const resolvedTags =
+        providedTags.length > 0
+            ? providedTags
+            : existingTagsInText.length > 0
+            ? existingTagsInText
+            : DEFAULT_FALLBACK_TAGS;
+
+    // Limit to 4 hashtags maximum
+    const finalTags = resolvedTags.slice(0, 4);
+    const formattedTags = finalTags.join(" ");
+
+    // 3. Remove legacy tag blocks and trailing hashtags from body text
     text = text.replace(LEGACY_TAGS_REGEX, "").replace(TARGET_TAGS_REGEX, "");
 
-    // 3. Clean up trailing/leading whitespace and trailing dashes or commas
-    text = text.trim().replace(/[\s\-,.]+$/, (match) => {
-        // preserve sentence-ending periods, strip loose dashes/spaces
-        return match.trim() === "." ? "." : "";
-    }).trim();
-
-    // 4. Ensure character limit (guaranteed <= 280 chars)
-    // On X, URLs count as 23 chars, but to ensure strict compliance across all validators,
-    // we also guarantee raw string length <= 280 characters.
-    const suffixLength = url.length + WORKTREEWISE_TAGS.length + 3;
-    const maxBodyLength = Math.max(120, 280 - suffixLength - 3);
-
-    if (text.length > maxBodyLength) {
-        text = text.slice(0, maxBodyLength).replace(/\s+\S*$/, "") + "...";
+    // Strip trailing hashtags and separators at the end of the text
+    while (/(?:[\s·•\-,]+#[A-Za-z0-9_]+)+\s*$/i.test(text)) {
+        text = text.replace(/(?:[\s·•\-,]+#[A-Za-z0-9_]+)+\s*$/i, "");
     }
 
-    return `${text}\n\n${url}\n${WORKTREEWISE_TAGS}`;
+    // Clean loose middle dots, bullets, or hanging separators left over from previous formats
+    text = text.replace(/[·•]/g, " ").replace(/[ \t]+/g, " ");
+
+    // 4. Clean up trailing/leading whitespace and trailing dashes or commas
+    text = text
+        .trim()
+        .replace(/[\s\-,:]+$/, "")
+        .trim();
+
+    // 5. Ensure character limit (guaranteed <= 280 chars)
+    // Suffix is "\n\n" + url + "\n" + formattedTags
+    const suffix = `\n\n${url}\n${formattedTags}`;
+    const maxBodyLength = Math.max(100, 280 - suffix.length);
+
+    if (text.length > maxBodyLength) {
+        text = text.slice(0, maxBodyLength).replace(/\s+\S*$/, "").trim() + "...";
+    }
+
+    return `${text}${suffix}`;
 }
 
 async function requestBatchFromGemini(count: number, recentPostTexts: string[] = []): Promise<GeneratedPost[]> {
@@ -100,12 +160,13 @@ async function requestBatchFromGemini(count: number, recentPostTexts: string[] =
             category: p.category,
             mediaId: p.mediaId
         });
-        const formattedText = formatPostText(p.text, p.ctaUrl);
+        const formattedText = formatPostText(p.text, p.ctaUrl, p.tags);
 
         return {
             text: formattedText,
             mediaId: media.mediaId,
-            mediaUrl: media.mediaUrl
+            mediaUrl: media.mediaUrl,
+            tags: normalizeTags(p.tags).length > 0 ? normalizeTags(p.tags) : undefined
         };
     });
 }

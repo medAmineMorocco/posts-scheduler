@@ -650,7 +650,21 @@ ${JSON.stringify(
     2
 )}
 
-HOOKS, URLS, AND TAGS
+DYNAMIC HASHTAG RULES (CRITICAL FOR X ENGAGEMENT & REACH):
+- DO NOT use static or identical tags across all posts.
+- For EACH post, generate 2 to 4 hashtags that are specifically relevant to that post's topic, feature, and audience.
+- POPULARITY ON X: Choose high-performing hashtags with proven high reach, developer search volume, and active engagement in the software development community on X.
+- Tailor the hashtags dynamically depending on the subject of the post:
+  * Git workflows, branching, PR reviews, commits, diffs, history: #Git, #GitHub, #CodeReview, #WebDev, #Programming, #Coding, #OpenSource, #VersionControl
+  * AI coding agents, autonomous coding, Cursor, Claude Code, Copilot: #AICoding, #AIAgents, #CursorAI, #ClaudeCode, #DevTools, #AI, #SoftwareEngineering
+  * Monorepos, disk space, node_modules sharing, dependencies: #JavaScript, #TypeScript, #NodeJS, #WebDev, #DevOps, #Frontend
+  * Terminal workflows, CLI scripts, automation, post-creation hooks: #CLI, #DevOps, #Productivity, #Terminal, #Linux, #Bash, #DevTools
+  * Environment isolation, .env configs, localhost port conflicts: #WebDev, #Backend, #FullStack, #SoftwareEngineering, #DevLife
+  * IDE integrations (VS Code, Cursor, IntelliJ, Zed), developer productivity: #Productivity, #VSCode, #DevTools, #WebDev, #Programming
+- Format tags in clean PascalCase without punctuation (e.g. #AICoding #DevTools #WebDev #SoftwareEngineering) separated by spaces.
+- Put the generated hashtags in the "tags" array property of the JSON object AND append them at the end of the post "text" right after the WorktreeWise URL.
+
+HOOKS, URLS, AND FORMATTING
 - The opening sentence must describe a concrete developer situation, for example: "Created 5 worktrees. Which one is actually locked?", "Another worktree already owns localhost:8080.", "Still typing git worktree add several times a day?", or "Need to fix production without touching your current workspace?"
 - Write for experienced software developers using concise, specific, conversational language.
 - Use actual Git commands when useful.
@@ -658,8 +672,7 @@ HOOKS, URLS, AND TAGS
 - Do not number posts.
 - Avoid corporate language, hype, and excessive emojis.
 - Every post MUST be accompanied by a relevant WorktreeWise page URL chosen from URLS (default to https://www.worktreewise.com).
-- Every post MUST end with these exact tags: #Git · #DevTools · #AICoding
-- CRITICAL LENGTH CONSTRAINT: Maximum 280 characters for the ENTIRE post (including the WorktreeWise URL and #Git · #DevTools · #AICoding). Keep the main body concise (~160-200 characters) so the full post stays strictly under 280 characters.
+- CRITICAL LENGTH CONSTRAINT: Maximum 280 characters for the ENTIRE post (including the WorktreeWise URL and dynamic hashtags). Keep the main body concise (~150-180 characters) so the full post stays strictly under 280 characters.
 
 URL RULES
 - Match ctaUrl to the most relevant URL from URLS (or https://www.worktreewise.com).
@@ -684,18 +697,20 @@ Use exactly this structure:
 {
   "posts": [
     {
-      "text": "Post copy here\\n\\nhttps://www.worktreewise.com\\n#Git · #DevTools · #AICoding",
+      "text": "Post copy here\\n\\nhttps://www.worktreewise.com\\n#Git #DevTools #WebDev",
       "category": "problem_solution",
       "feature": "multiple_ai_agents",
       "mediaId": "multiple-ai-agents",
       "ctaUrl": "https://www.worktreewise.com/ai-agents/git-worktrees",
-      "intent": "conversion"
+      "intent": "conversion",
+      "tags": ["#AICoding", "#DevTools", "#SoftwareEngineering"]
     }
   ]
 }
 
 Allowed categories: problem_solution, feature_demo, cli_vs_worktreewise, workflow, education, promotion.
 Allowed intents: conversion, awareness, education.
+tags must be an array of 2-4 popular, relevant hashtags on X.
 mediaId must reference MEDIA_ASSETS or be null.
 ctaUrl must reference URLS.
 Return exactly ${postCount} objects in posts.`;
