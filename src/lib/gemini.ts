@@ -9,6 +9,7 @@ export interface GeneratedPost {
 
 export const DEFAULT_WORKTREEWISE_URL = "https://www.worktreewise.com";
 export const DEFAULT_FALLBACK_TAGS = ["#Git", "#DevTools"];
+export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
 // Backward-compatibility export
 export const WORKTREEWISE_TAGS = DEFAULT_FALLBACK_TAGS.join(" ");
 
@@ -112,13 +113,14 @@ export function formatPostText(
 async function requestBatchFromGemini(count: number, recentPostTexts: string[] = []): Promise<GeneratedPost[]> {
     const enrichedPrompt = buildWorktreeWisePrompt(recentPostTexts, count);
     const apiKey = process.env.GEMINI_API_KEY;
+    const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
 
     if (!apiKey) {
         throw new Error("GEMINI_API_KEY environment variable is missing");
     }
 
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
             method: "POST",
             headers: {

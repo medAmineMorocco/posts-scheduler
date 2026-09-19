@@ -33,4 +33,5 @@ jobs:
           BUFFER_API_KEY_2: ${{ secrets.BUFFER_API_KEY_2 }}
           BUFFER_PROFILE_2: ${{ secrets.BUFFER_PROFILE_2 }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || secrets.GEMINI_MODEL }}
         run: npm run schedule
