@@ -10,6 +10,7 @@ export interface GeneratedPost {
 export const DEFAULT_WORKTREEWISE_URL = "https://www.worktreewise.com";
 export const DEFAULT_FALLBACK_TAGS = ["#Git", "#DevTools"];
 export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
+export const DEFAULT_GROQ_MODEL = "qwen/qwen3.8-27b";
 // Backward-compatibility export
 export const WORKTREEWISE_TAGS = DEFAULT_FALLBACK_TAGS.join(" ");
 
@@ -110,8 +111,73 @@ export function formatPostText(
     return `${text}${suffix}`;
 }
 
-async function requestBatchFromGemini(count: number, recentPostTexts: string[] = []): Promise<GeneratedPost[]> {
-    const enrichedPrompt = buildWorktreeWisePrompt(recentPostTexts, count);
+export function isTemporaryGeminiError(error: unknown): boolean {
+    if (!error) return false;
+
+    const status = (error as any)?.status || (error as any)?.statusCode || (error as any)?.response?.status;
+    if (typeof status === "number") {
+        if (status === 429 || (status >= 500 && status <= 599)) {
+            return true;
+        }
+        if (status >= 400 && status < 500) {
+            return false;
+        }
+    }
+
+    const message = (
+        (error instanceof Error ? error.message : "") +
+        " " +
+        (typeof error === "string" ? error : JSON.stringify(error))
+    ).toLowerCase();
+
+    // Rate limits / Quota
+    if (
+        message.includes("429") ||
+        message.includes("resource_exhausted") ||
+        message.includes("quota") ||
+        message.includes("rate limit") ||
+        message.includes("rate_limit") ||
+        message.includes("ratelimit") ||
+        message.includes("too many requests")
+    ) {
+        return true;
+    }
+
+    // Temporary server / network issues
+    if (
+        message.includes("503") ||
+        message.includes("unavailable") ||
+        message.includes("502") ||
+        message.includes("bad gateway") ||
+        message.includes("504") ||
+        message.includes("gateway timeout") ||
+        message.includes("deadline_exceeded") ||
+        message.includes("500") ||
+        message.includes("internal server error") ||
+        message.includes("overloaded") ||
+        message.includes("temporarily unavailable")
+    ) {
+        return true;
+    }
+
+    // Network & transport errors
+    if (
+        message.includes("fetch failed") ||
+        message.includes("econnreset") ||
+        message.includes("etimedout") ||
+        message.includes("socket hang up") ||
+        message.includes("network error") ||
+        message.includes("timeout") ||
+        message.includes("timed out") ||
+        message.includes("und_err_")
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+export async function generateWithGemini(prompt: string): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
 
@@ -131,7 +197,7 @@ async function requestBatchFromGemini(count: number, recentPostTexts: string[] =
                     {
                         parts: [
                             {
-                                text: enrichedPrompt
+                                text: prompt
                             }
                         ]
                     }
@@ -140,18 +206,98 @@ async function requestBatchFromGemini(count: number, recentPostTexts: string[] =
         }
     );
 
-    const json = await response.json();
+    const json = await response.json().catch(() => null);
 
     if (!response.ok) {
-        throw new Error(JSON.stringify(json));
+        const errorMsg = json?.error?.message || response.statusText || `HTTP ${response.status}`;
+        const error = new Error(`Gemini API error (${response.status}): ${errorMsg}`);
+        (error as any).status = response.status;
+        (error as any).details = json;
+        throw error;
     }
 
-    const text = json.candidates[0].content.parts[0].text;
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+        throw new Error(`Empty response from Gemini: ${JSON.stringify(json)}`);
+    }
 
-    const cleaned = text
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
+    return text;
+}
+
+export async function generateWithGroq(prompt: string): Promise<string> {
+    const apiKey = process.env.GROQ_API_KEY;
+    const model = process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL;
+
+    if (!apiKey) {
+        throw new Error("GROQ_API_KEY environment variable is missing");
+    }
+
+    const response = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model,
+                messages: [
+                    {
+                        role: "user",
+                        content: prompt,
+                    },
+                ],
+            }),
+        }
+    );
+
+    const json = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        const errorMsg = json?.error?.message || response.statusText || `HTTP ${response.status}`;
+        const error = new Error(`Groq API error (${response.status}): ${errorMsg}`);
+        (error as any).status = response.status;
+        (error as any).details = json;
+        throw error;
+    }
+
+    const content = json?.choices?.[0]?.message?.content;
+    if (!content) {
+        throw new Error(`Empty response from Groq: ${JSON.stringify(json)}`);
+    }
+
+    return content;
+}
+
+export async function generatePromptResponse(prompt: string): Promise<string> {
+    try {
+        return await generateWithGemini(prompt);
+    } catch (error) {
+        // if (isTemporaryGeminiError(error)) {
+        //     console.warn("[generatePromptResponse] Temporary Gemini error encountered, falling back to Groq:", error);
+        //     return await generateWithGroq(prompt);
+        // }
+
+        throw error;
+    }
+}
+
+export function parsePostsResponse(rawText: string): GeneratedPost[] {
+    let cleaned = rawText
+        .replace(/<think>[\s\S]*?<\/think>/gi, "")
         .trim();
+
+    const jsonBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (jsonBlockMatch) {
+        cleaned = jsonBlockMatch[1].trim();
+    } else {
+        const firstBrace = cleaned.indexOf("{");
+        const lastBrace = cleaned.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+        }
+    }
 
     const parsed = JSON.parse(cleaned);
 
@@ -173,6 +319,15 @@ async function requestBatchFromGemini(count: number, recentPostTexts: string[] =
     });
 }
 
+async function requestBatch(count: number, recentPostTexts: string[] = []): Promise<GeneratedPost[]> {
+    const enrichedPrompt = buildWorktreeWisePrompt(recentPostTexts, count);
+    const rawText = await generatePromptResponse(enrichedPrompt);
+    return parsePostsResponse(rawText);
+}
+
+// Backward-compatibility export
+export const requestBatchFromGemini = requestBatch;
+
 export async function generatePosts(targetCount: number = 140): Promise<GeneratedPost[]> {
     console.log(`[generatePosts] Generating exactly ${targetCount} posts`);
 
@@ -186,7 +341,7 @@ export async function generatePosts(targetCount: number = 140): Promise<Generate
         console.log(`[generatePosts] Batch attempt ${attempts}: requesting ${remainingNeeded} posts`);
 
         try {
-            const batch = await requestBatchFromGemini(
+            const batch = await requestBatch(
                 remainingNeeded,
                 accumulatedPosts.map((p) => p.text)
             );

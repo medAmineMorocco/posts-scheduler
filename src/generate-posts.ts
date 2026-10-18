@@ -1,7 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
-dotenv.config();
-
+import { printEnvVariables } from "./lib/env.js";
 import { generatePosts } from './lib/gemini.js';
 import { insertPost } from "./lib/notion.js";
 
@@ -60,6 +57,7 @@ function buildPublishDate(date: Date, time: string): string {
 }
 
 export async function generateAndInsertPosts(targetCount: number = 140): Promise<number> {
+    printEnvVariables();
     const startDate = getStartDate();
     const posts = await generatePosts(targetCount);
 

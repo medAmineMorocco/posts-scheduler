@@ -32,7 +32,9 @@ export async function schedulePosts(): Promise<{ scheduled: number }> {
             profile: string
         ) {
             const normalizedMediaUrl = post.mediaUrl
-                ? post.mediaUrl.replace("https://worktreewise.com/images/worktreewise/", "https://worktreewise.com/images/v1.1.0/")
+                ? post.mediaUrl
+                    .replace("https://worktreewise.com/images/worktreewise/", "https://worktreewise.com/images/v1.2.0/")
+                    .replace("https://worktreewise.com/images/v1.1.0/", "https://worktreewise.com/images/v1.2.0/")
                 : null;
 
             console.log("[schedule.publish] Publishing post", {

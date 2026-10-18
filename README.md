@@ -32,6 +32,8 @@ To allow the workflows to execute successfully, configure the following secrets 
 - `BUFFER_PROFILE_2`: Buffer channel/profile ID for the second account.
 - `GEMINI_API_KEY`: Google Gemini API key used for post content generation.
 - `GEMINI_MODEL`: (Optional) Google Gemini model to use (default: `gemini-3.6-flash`).
+- `GROQ_API_KEY`: Groq API key used as fallback when Gemini encounters temporary errors.
+- `GROQ_MODEL`: (Optional) Groq model to use (default: `qwen/qwen3.8-27b`).
 
 ---
 
@@ -56,6 +58,8 @@ BUFFER_API_KEY_2=your_buffer_key_2
 BUFFER_PROFILE_2=your_buffer_profile_2
 GEMINI_API_KEY=your_gemini_api_key
 # GEMINI_MODEL=gemini-3.6-flash # optional
+GROQ_API_KEY=your_groq_api_key
+# GROQ_MODEL=qwen/qwen3.8-27b # optional
 ```
 
 ### 3. Available Scripts
